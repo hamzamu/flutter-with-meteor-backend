@@ -1,0 +1,125 @@
+// import 'package:enhanced_ddp/enhanced_ddp.dart';
+import 'package:flutter/material.dart';
+import 'package:dart_meteor_web/dart_meteor_web.dart';
+
+import 'dart:convert';
+
+MeteorClient meteor = MeteorClient.connect(url: 'http://localhost:3000');
+
+void main() async {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  // This widget is the root of your application.
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Flutter Demo',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: MyHomePage(title: 'Flutter Demo Home Page'),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  MyHomePage({Key? key, required this.title}) : super(key: key);
+
+  final String title;
+
+  @override
+  _MyHomePageState createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  String? _methodResult;
+  SubscriptionHandler? _subscriptionHandler;
+  // late Collection posts;
+
+  List<dynamic> babiesNames = [];
+
+  Map<String, dynamic>? data;
+
+  // get meteor => null;
+
+  @override
+  void initState() {
+    super.initState();
+    meteor.prepareCollection('posts');
+    _subscriptionHandler = meteor.subscribe('posts', []);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _subscriptionHandler!.stop();
+  }
+
+  @override
+  void hello() async {
+    print('Calling hello');
+    await meteor.call('hello', [
+      {"S": "s", "ha": "pp"}
+    ]).then((result) {
+      // print(result);
+
+      // var babiesNamesx = jsonDecode(result);
+      // print(babiesNamesx);
+      setState(() {
+        // babiesNames = jsonDecode(result);
+        babiesNames = result;
+        print(babiesNames[0]["_id"]);
+
+        // _methodResult = result.toString();
+      });
+    }).catchError((err) {
+      if (err is MeteorError) {
+        setState(() {
+          _methodResult = err.message;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(40),
+        child: ListView(
+          // mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            for (var i in babiesNames) Text(i["_id"]),
+            // Text('s $babiesNames[0]["_id"]'),
+            ElevatedButton(onPressed: () {}, child: Text("getPosts")),
+            StreamBuilder(
+                stream: meteor.collections['posts'],
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    return RaisedButton(
+                      child: Text('Logout $snapshot.data'),
+                      onPressed: () {},
+                    );
+                  }
+                  return RaisedButton(
+                    child: Text('Login'),
+                    onPressed: () {},
+                  );
+                }),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: hello,
+        tooltip: 'Increment',
+        child: Icon(Icons.add),
+      ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+}
